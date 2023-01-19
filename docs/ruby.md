@@ -2,9 +2,11 @@
 
 direnv is just a shell extension that manages your environment variables
 depending on the folder you live in. In this article we will explore how it
-can be used in combination with
-[ruby-install](https://github.com/postmodern/ruby-install) to manage and
+can be used in combination with[ruby-install][] and [chruby][] to manage and
 select the version of ruby that you want to use in a project.
+
+[ruby-install]: https://github.com/postmodern/ruby-install
+[chruby]: https://github.com/postmodern/ruby-install
 
 ## The setup
 
@@ -21,21 +23,16 @@ install a couple of ruby versions. We're also creating a couple of aliases
 for convenience.
 
 ```
-brew install ruby-install
+brew install ruby-install chruby
 ruby-install ruby 1.9
 ruby-install ruby 2.0
-cd ~/.rubies
-ln -s 1.9.3-p448 1.9.3
-ln -s 1.9.3-p448 1.9
-ln -s 2.0.0-p247 2.0.0
-ln -s 2.0.0-p247 2.0
 ```
 
 The end goal is that each project will have an `.envrc` file that contains
 a descriptive syntax like `use ruby 1.9.3` to selects the right ruby version
 for the project.
 
-For that regard we are going to use a couple of commands available in the
+For that regard we are going to use "chruby" with a couple of commands available in the
 [direnv stdlib](/man/direnv-stdlib.1.md) and expand it a bit in the `~/.config/direnv/direnvrc`
 file.
 
@@ -47,8 +44,9 @@ Add this to the `~/.config/direnv/direnvrc` file (you have to create it if it do
 # Loads the specified ruby version into the environment
 #
 use_ruby() {
-  local ruby_dir=$HOME/.rubies/$1
-  load_prefix $ruby_dir
+  source /usr/local/share/chruby/chruby.sh
+  local version=`semver_search $HOME/.rubies ruby- "$1"`
+  chruby "ruby-$version"
   layout ruby
 }
 ```
@@ -67,8 +65,8 @@ the execution context of an envrc.
 `use something something` dsl so that `use ruby <version>` will translate into
 `use_ruby <version>`.
 
-`load_prefix` will add a couple of things into the environment, notably add
-`<prefix>/bin` into the PATH. This is what makes the specified ruby available.
+It sources `chruby` to set all the environment variables required to make that
+version available.
 
 And finally `layout ruby` who like `use` translates into the `layout_ruby`
 function call. It's used to describe common project layouts. In the stdlib, the
@@ -93,4 +91,3 @@ also the exact redis or mysql or ... version that you want to use, without
 having to start a VM. I think that's definitely possible using something like
 the [Nix package manager](http://nixos.org/nix/), something that still needs
 to be explored in a future post.
-
